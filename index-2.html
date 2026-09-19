@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cam Balkon Çizim — V2 MM</title>
+<style>
+:root{--blue:#075aa8;--green:#16a34a;--bg:#f3f6fa;--card:#fff;--text:#17324d;--muted:#66788a;--border:#dbe4ee}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
+header{background:linear-gradient(135deg,#064b8e,#0a74c9);color:#fff;padding:16px;position:sticky;top:0;z-index:5;box-shadow:0 2px 10px #0002}header h1{margin:0;font-size:21px}header small{opacity:.85}
+.wrap{max-width:1200px;margin:auto;padding:14px}.grid{display:grid;grid-template-columns:340px 1fr;gap:14px}@media(max-width:800px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;box-shadow:0 2px 8px #17324d0b;margin-bottom:14px}.card h2{font-size:16px;margin:0 0 12px}
+label{display:block;font-size:12px;font-weight:700;margin:10px 0 5px;color:#42586e}input,select,button{width:100%;padding:10px;border:1px solid #cbd7e3;border-radius:9px;font-size:14px;background:#fff}button{cursor:pointer;font-weight:700}.primary{background:var(--blue);color:#fff;border-color:var(--blue)}.green{background:var(--green);color:#fff;border-color:var(--green)}.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}.muted{color:var(--muted);font-size:12px}.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+canvas{width:100%;height:auto;border:1px solid var(--border);border-radius:10px;background:#fff}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}@media(max-width:600px){.stats{grid-template-columns:repeat(2,1fr)}}.stat{background:#f7fafc;border:1px solid var(--border);padding:10px;border-radius:10px}.stat b{display:block;font-size:18px;margin-top:4px}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;border-bottom:1px solid var(--border);text-align:left}th{background:#f6f9fc}.tag{display:inline-block;padding:4px 7px;border-radius:20px;background:#e8f3ff;color:#075aa8;font-size:11px;font-weight:700}
+footer{text-align:center;color:#718196;font-size:11px;padding:20px}.danger{color:#b42318}
+</style></head>
+<body>
+<header><h1>Cam Balkon Çizim — Kendi Programımız</h1><small>V2 MM • Albert + Ender • çoklu kollu kanat • pay motoru • metraj</small></header>
+<div class="wrap"><div class="grid">
+<section>
+<div class="card"><h2>1. Proje Bilgileri</h2>
+<label>Müşteri / Proje</label><input id="project" placeholder="Örn. Ahmet Yılmaz">
+<div class="row"><div><label>Yükseklik (mm)</label><input id="h" type="number" value="2500" min="1"></div><div><label>Balkon Tipi</label><select id="shape"><option value="duz">Düz / Ön</option><option value="l">L Balkon (Ön + Sağ)</option><option value="u">U Balkon (Ön + Sol + Sağ)</option></select></div></div>
+<p class="muted">Tüm ölçüler mm. Örnek: 2500 − 185 = <b>2315 mm</b> cam yüksekliği. Her cephede ölçüyü ve cam sayısını ayrı gir; program camları otomatik böler.</p>
+<div class="card" style="margin-top:10px;margin-bottom:0;padding:10px;background:#f8fbff"><b>Cephe Ölçüleri ve Cam Sayıları</b>
+<div class="row" style="margin-top:8px"><div><label>Ön Balkon / Ön Cephe (mm)</label><input id="frontW" type="number" value="4000" min="1"></div><div><label>Ön Cam Sayısı</label><input id="frontN" type="number" value="8" min="1"></div></div>
+<div class="row"><div><label>Sol Taraf (mm)</label><input id="leftW" type="number" value="2500" min="1"></div><div><label>Sol Cam Sayısı</label><input id="leftN" type="number" value="4" min="1"></div></div>
+<div class="row"><div><label>Sağ Taraf (mm)</label><input id="rightW" type="number" value="2500" min="1"></div><div><label>Sağ Cam Sayısı</label><input id="rightN" type="number" value="4" min="1"></div></div>
+<div class="row"><div><label>Ön Kollu Sayısı</label><input id="frontHandle" type="number" value="1" min="0"></div><div><label>Sol / Sağ Kollu</label><div class="row"><input id="leftHandle" type="number" value="0" min="0"><input id="rightHandle" type="number" value="0" min="0"></div></div></div>
+<p class="muted">Düz: sadece Ön kullanılır. L: Ön + Sağ kullanılır. U: Ön + Sol + Sağ kullanılır. Kollu sayısı o cephedeki camlara dağıtılır ve her kollu camdan 55 mm düşülür.</p></div>
+<label>Marka / Sistem</label><select id="brand"><option value="kullanici">Kullanıcı Tanımı</option><option value="bks30">BKS 30 mm Isıcam — doğrulanmış</option><option value="albert_tiara_twin">Albert Genau Tiara Twinmax (28 mm Isıcam)</option><option value="ender_iscam">Ender Isıcamlı Cam Balkon</option></select>
+<label>Sistem</label><select id="system"><option>Katlanır Cam Balkon</option><option>Sürme Cam Balkon</option><option>Isıcamlı Cam Balkon</option><option>Giyotin</option><option>Rüzgar Kırıcı</option><option>Özel Sistem</option></select>
+<div class="row"><div><label>Cam</label><select id="glass"><option>Tek Cam 8 mm</option><option>Tek Cam 10 mm</option><option>Çift Cam</option><option>Konfor Cam</option></select></div><div><label>Cam Rengi</label><select id="color"><option>Şeffaf</option><option>Açık Füme</option><option>Koyu Füme</option><option>Bronz</option></select></div></div>
+<div class="row"><div><label>Kanat Sayısı</label><input id="leaves" type="number" value="8" min="2"></div><div><label>Fire %</label><input id="waste" type="number" value="5" min="0"></div></div>
+</div>
+<div class="card"><h2>2. Fiyat / Maliyet</h2>
+<div class="row"><div><label>m² Satış (TL)</label><input id="sale" type="number" value="4900"></div><div><label>m² Maliyet (TL)</label><input id="cost" type="number" value="3500"></div></div>
+<div class="row"><div><label>Montaj (TL)</label><input id="install" type="number" value="0"></div><div><label>Diğer (TL)</label><input id="other" type="number" value="0"></div></div>
+<div class="actions"><button class="primary" onclick="calculate()">Hesapla</button><button onclick="saveProject()">Projeyi Kaydet</button></div>
+</div>
+<div class="card"><h2>3. Projeler</h2><div id="saved" class="muted">Henüz kayıt yok.</div><button style="margin-top:8px" onclick="clearProjects()">Kayıtları Temizle</button></div>
+</section>
+<section>
+<div class="card"><h2>2D Çizim <span class="tag" id="sysTag">Katlanır</span></h2><canvas id="drawing" width="900" height="520"></canvas>
+<div class="card" style="margin-top:10px;margin-bottom:0;padding:10px;background:#f8fbff">
+  <div style="font-weight:700;margin-bottom:6px">Kanat Yönleri ve Kollu Kanat</div>
+  <div class="muted">Çizimdeki kanada dokunarak yönünü değiştir. <b>“Kollu”</b> butonu ile kol mekanizması olan kanadı seç. 55 mm pay yalnızca kollu kanadın camından düşülür.</div>
+  <div id="leafControls" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(55px,1fr));gap:5px;margin-top:8px"></div>
+</div>
+<div class="stats"><div class="stat">Alan<b id="area">0 m²</b></div><div class="stat">Cam adedi<b id="count">0</b></div><div class="stat">Tahmini satış<b id="total">0 TL</b></div><div class="stat">Brüt fark<b id="profit">0 TL</b></div></div></div>
+<div class="card"><h2>Pay Kütüphanesi</h2><div id="payLibrary" class="muted"></div><p class="muted">Yeşil/Doğrulanmış değerler üretici teknik dokümanından alınmıştır. Albert ve Ender için açık web kaynağında kesin cam kesim payı bulunmadığında değer uydurulmaz; katalogdan doğrulanana kadar “beklemede” tutulur.</p></div><div class="card"><h2>Ölçü Kuralları</h2><div id="rules" class="muted"></div></div>
+<div class="card"><h2>Metraj / Kesim Ön Listesi</h2><table><thead><tr><th>Kalem</th><th>Miktar</th><th>Yaklaşık ölçü</th><th>Açıklama</th></tr></thead><tbody id="bom"></tbody></table><p class="muted">Not: Bu V1 hesap motoru örnektir. Gerçek profil kesim ölçüleri, sistem seçimine ve kullandığınız üretici kataloglarına göre ayrıca tanımlanacaktır.</p></div>
+<div class="card"><h2>Sonraki sürümde ekleyeceğimiz modüller</h2><div class="row3"><div class="stat">Profil kartları<b>✓</b></div><div class="stat">Otomatik kesim<b>✓</b></div><div class="stat">Teklif PDF<b>✓</b></div></div><div class="row3" style="margin-top:8px"><div class="stat">3D görünüm<b>✓</b></div><div class="stat">Müşteri CRM<b>✓</b></div><div class="stat">Stok / cari<b>✓</b></div></div></div>
+</section></div><footer>Bu uygulama bağımsız olarak geliştirilen bir prototiptir; herhangi bir ticari programın kopyası değildir.</footer></div>
+<script>
+const $=id=>document.getElementById(id); const money=n=>new Intl.NumberFormat('tr-TR',{style:'currency',currency:'TRY',maximumFractionDigits:0}).format(n);
+const PAY={
+  kullanici:{name:'Firma/Saha Kuralı',height:185,side:40,handle:55,inter:30,cornerLong:20,cornerShort:60,status:'Saha kuralı'},
+  albert_tiara_twin:{name:'Albert Genau Tiara Twinmax',height:185,side:40,handle:55,inter:30,cornerLong:20,cornerShort:60,status:'Kesin cam kesim payı açık kaynakta verilmedi; firma payları kullanılır.'},
+  ender_iscam:{name:'Ender Isıcamlı',height:185,side:40,handle:55,inter:30,cornerLong:20,cornerShort:60,status:'Kesin cam kesim payı açık metinde verilmedi; firma payları kullanılır.'},
+  bks30:{name:'BKS 30 mm Isıcam',height:170,side:37,handle:55,inter:16,cornerLong:42,cornerShort:30,status:'BKS teknik dokümanındaki doğrulanmış değerler'}
+};
+function pay(){return PAY[$('brand').value]||PAY.kullanici}
+function num(id){return Math.max(0,+($(id)?.value)||0)}
+function sideData(name,widthId,countId,handleId,corner){
+  const p=pay(), width=num(widthId), count=Math.max(1,num(countId)), handles=Math.min(count,num(handleId));
+  const usable=Math.max(0,width-p.side-corner-Math.max(0,count-1)*p.inter);
+  const base=usable/count;
+  const normal=Math.max(0,count-handles), handleW=Math.max(0,base-p.handle);
+  const area=(normal*base+handles*handleW)*Math.max(0,num('h')-p.height)/1000000;
+  return {name,width,count,handles,base,handleW,normal,glassH:Math.max(0,num('h')-p.height),area,corner};
+}
+function activeSides(){
+  const shape=$('shape').value;
+  if(shape==='duz') return [sideData('Ön','frontW','frontN','frontHandle',0)];
+  if(shape==='l') return [sideData('Ön','frontW','frontN','frontHandle',0),sideData('Sağ','rightW','rightN','rightHandle',pay().cornerShort)];
+  return [sideData('Ön','frontW','frontN','frontHandle',0),sideData('Sol','leftW','leftN','leftHandle',pay().cornerLong),sideData('Sağ','rightW','rightN','rightHandle',pay().cornerShort)];
+}
+function calculate(){
+ const p=pay(), sides=activeSides(), h=num('h'), waste=num('waste')/100, sale=num('sale'), cost=num('cost'), install=num('install'), other=num('other');
+ const totalPanels=sides.reduce((a,s)=>a+s.count,0), area=sides.reduce((a,s)=>a+s.area,0);
+ const saleTotal=area*sale+install+other, baseCost=area*cost*(1+waste), profit=saleTotal-baseCost;
+ $('area').textContent=area.toFixed(2)+' m²'; $('count').textContent=totalPanels; $('total').textContent=money(saleTotal); $('profit').textContent=money(profit); $('sysTag').textContent=$('system').value;
+ $('payLibrary').innerHTML=`<b>${p.name}</b><br>${p.status}<br><br><b>Aktif paylar:</b> Dikey −${p.height} mm • yan ${p.side} mm/yan • kollu ${p.handle} mm • ara ${p.inter} mm • L/U köşe uzun ${p.cornerLong} mm • kısa ${p.cornerShort} mm.`;
+ $('rules').innerHTML=`Yükseklik: <b>${h} − ${p.height} = ${Math.max(0,h-p.height)} mm</b>. Her cephede: genişlik − yan/köşe payları − ara paylar bölü cam sayısı. Kollu camlarda ayrıca −${p.handle} mm. <br><br>${sides.map(s=>`<b>${s.name}:</b> ${s.width} mm / ${s.count} cam → normal ${s.normal?s.base.toFixed(1):'0'} mm, kollu ${s.handles?s.handleW.toFixed(1):'0'} mm`).join('<br>')}`;
+ const rows=[];
+ sides.forEach(s=>{
+   if(s.normal) rows.push([s.name+' normal cam',s.normal,`${s.base.toFixed(1)} × ${s.glassH.toFixed(1)} mm`,'Kollu olmayan cam']);
+   if(s.handles) rows.push([s.name+' kollu cam',s.handles,`${s.handleW.toFixed(1)} × ${s.glassH.toFixed(1)} mm`,`Her kollu cam −${p.handle} mm`]);
+   rows.push([s.name+' ara pay',Math.max(0,s.count-1),`${p.inter} mm`,'Birleşim başına']);
+   rows.push([s.name+' toplam ölçü',1,`${s.width} × ${h} mm`,`${s.count} cam bölümü`]);
+ });
+ rows.push(['Toplam fitil / conta',Math.ceil(totalPanels*2),'adet','Ön metraj']); $('bom').innerHTML=rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td></tr>`).join('');
+ draw(sides,h);
+}
+function draw(sides,h){
+ const c=$('drawing'),x=c.getContext('2d'); x.clearRect(0,0,c.width,c.height); const gap=35,padX=60,padY=80;
+ const total=sides.reduce((a,s)=>a+s.width,0)+gap*(sides.length-1), scale=Math.min((c.width-padX*2)/total,(c.height-padY*2)/h); let cursor=padX;
+ x.textAlign='center'; x.font='bold 13px Arial';
+ sides.forEach((s,si)=>{
+   const dw=s.width*scale, dh=h*scale, oy=(c.height-dh)/2;
+   x.fillStyle='#eef5fb'; x.fillRect(cursor,oy,dw,dh); x.strokeStyle='#17324d'; x.lineWidth=4; x.strokeRect(cursor,oy,dw,dh);
+   const pw=dw/s.count; x.lineWidth=1.5; for(let i=1;i<s.count;i++){x.beginPath();x.moveTo(cursor+i*pw,oy);x.lineTo(cursor+i*pw,oy+dh);x.stroke()}
+   x.fillStyle='#075aa8'; x.font='bold 14px Arial'; x.fillText(`${s.name} • ${s.width} mm • ${s.count} cam`,cursor+dw/2,oy-22);
+   for(let i=0;i<s.count;i++){const cx=cursor+pw*(i+.5);x.fillText('K'+(i+1),cx,oy+22);x.font='bold 20px Arial';x.fillText(i<s.handles?'↔':'→',cx,oy+dh/2+7);x.font='bold 12px Arial'}
+   cursor+=dw+gap;
+ });
+ x.fillStyle='#17324d'; x.font='bold 15px Arial'; x.fillText(`Yükseklik: ${h} mm • Cam yüksekliği: ${Math.max(0,h-pay().height)} mm`,c.width/2,c.height-18);
+}
+function saveProject(){calculate();const p=JSON.parse(localStorage.getItem('cb_projects')||'[]');p.unshift({name:$('project').value||'İsimsiz',date:new Date().toLocaleString('tr-TR'),shape:$('shape').value,frontW:num('frontW'),leftW:num('leftW'),rightW:num('rightW'),frontN:num('frontN'),leftN:num('leftN'),rightN:num('rightN'),area:$('area').textContent,total:$('total').textContent});localStorage.setItem('cb_projects',JSON.stringify(p.slice(0,30)));renderSaved()}
+function renderSaved(){const p=JSON.parse(localStorage.getItem('cb_projects')||'[]');$('saved').innerHTML=p.length?p.map(v=>`<div style="padding:8px 0;border-bottom:1px solid #e5ebf1"><b>${v.name}</b><br><span class="muted">${v.shape} • Ön ${v.frontW} / Sol ${v.leftW} / Sağ ${v.rightW} mm • ${v.frontN}/${v.leftN}/${v.rightN} cam • ${v.area} • ${v.total}<br>${v.date}</span></div>`).join(''):'Henüz kayıt yok.'}
+function clearProjects(){if(confirm('Kayıtlar silinsin mi?')){localStorage.removeItem('cb_projects');renderSaved()}}
+['h','frontW','frontN','leftW','leftN','rightW','rightN','frontHandle','leftHandle','rightHandle','shape','brand','system','glass','color','sale','cost','install','other','waste'].forEach(id=>{const el=$(id);if(el)el.addEventListener('input',calculate)});
+$('shape').addEventListener('change',calculate); calculate(); renderSaved();
+</script></body></html>
