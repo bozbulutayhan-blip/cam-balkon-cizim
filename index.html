@@ -15,14 +15,14 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
 footer{text-align:center;color:#718196;font-size:11px;padding:20px}.danger{color:#b42318}
 </style></head>
 <body>
-<header><h1>Cam Balkon Çizim — Kendi Programımız</h1><small>V2 • Albert + Ender • çoklu kollu kanat • pay motoru • metraj</small></header>
+<header><h1>Cam Balkon Çizim — Kendi Programımız</h1><small>V2 • MM ölçü sistemi • Albert + Ender • çoklu kollu kanat • pay motoru • metraj</small></header>
 <div class="wrap"><div class="grid">
 <section>
 <div class="card"><h2>1. Proje Bilgileri</h2>
 <label>Müşteri / Proje</label><input id="project" placeholder="Örn. Ahmet Yılmaz">
-<div class="row"><div><label>Genişlik / Uzun Kol (cm)</label><input id="w" type="number" value="400" min="1"></div><div><label>Yükseklik (cm)</label><input id="h" type="number" value="250" min="1"></div></div>
-<label>Balkon Tipi</label><select id="shape"><option value="duz">Düz Balkon</option><option value="l">L Balkon</option></select>
-<div id="lbox" style="display:none"><label>L kısa kol (cm)</label><input id="shortW" type="number" value="250" min="1"><p class="muted">L birleşiminde uzun koldan 2 cm, kısa koldan 6 cm köşe payı uygulanır.</p></div>
+<div class="row"><div><label>Genişlik / Uzun Kol (mm)</label><input id="w" type="number" value="4000" min="1"></div><div><label>Yükseklik (mm)</label><input id="h" type="number" value="2500" min="1"></div></div><p class="muted">Ölçüler artık tamamen mm girilir. Örnek: 2500 − 185 = 2315 mm cam yüksekliği.</p>
+<label>Balkon Tipi</label><select id="shape"><option value="duz">Düz Balkon</option><option value="l">L Balkon</option><option value="u">U Balkon</option></select>
+<div id="lbox" style="display:none"><label id="shortLabel">Kısa Kol / Yan Kol (mm)</label><input id="shortW" type="number" value="2500" min="1"><p class="muted">L: 1 kısa kol. U: aynı ölçüde 2 yan kol. Köşe payları uzun 20 mm, kısa 60 mm olarak uygulanır.</p></div>
 <label>Marka / Sistem</label><select id="brand"><option value="kullanici">Kullanıcı Tanımı</option><option value="bks30">BKS 30 mm Isıcam — doğrulanmış</option><option value="albert_tiara_twin">Albert Genau Tiara Twinmax (28 mm Isıcam)</option><option value="ender_iscam">Ender Isıcamlı Cam Balkon</option></select>
 <label>Sistem</label><select id="system"><option>Katlanır Cam Balkon</option><option>Sürme Cam Balkon</option><option>Isıcamlı Cam Balkon</option><option>Giyotin</option><option>Rüzgar Kırıcı</option><option>Özel Sistem</option></select>
 <div class="row"><div><label>Cam</label><select id="glass"><option>Tek Cam 8 mm</option><option>Tek Cam 10 mm</option><option>Çift Cam</option><option>Konfor Cam</option></select></div><div><label>Cam Rengi</label><select id="color"><option>Şeffaf</option><option>Açık Füme</option><option>Koyu Füme</option><option>Bronz</option></select></div></div>
@@ -62,43 +62,104 @@ function applyHandleCount(){const n=Math.max(0,Math.min(20,+$('handleCount').val
 function toggleHandle(i){ensureLeaves(+$('leaves').value||2); const k=handleLeaves.indexOf(i); if(k>=0) handleLeaves.splice(k,1); else handleLeaves.push(i); handleLeaves.sort((a,b)=>a-b); $('handleCount').value=handleLeaves.length; selectedLeaf=i; renderLeafControls(); calculate();}
 function toggleLeaf(i){selectedLeaf=i; leafDirections[i]=leafDirections[i]==='→'?'←':'→'; renderLeafControls(); calculate()}
 function renderLeafControls(){const box=$('leafControls'); if(!box)return; const n=leafDirections.length; box.innerHTML=leafDirections.map((d,i)=>`<div style="display:flex;flex-direction:column;gap:4px"><button type="button" onclick="toggleLeaf(${i})" style="padding:7px 4px;font-size:12px;border:1px solid ${selectedLeaf===i?'#075aa8':'#cbd7e3'};background:${selectedLeaf===i?'#e8f3ff':'#fff'}">K${i+1} ${d}</button><button type="button" onclick="toggleHandle(${i})" style="padding:5px 2px;font-size:11px;border:1px solid ${handleLeaves.includes(i)?'#16a34a':'#cbd7e3'};background:${handleLeaves.includes(i)?'#e9f9ef':'#fff'};color:${handleLeaves.includes(i)?'#166534':'#17324d'}">${handleLeaves.includes(i)?'KOLLU ✓':'KOLLU'}</button></div>`).join('')+`<div class="muted" style="grid-column:1/-1">Seçili kollu kanatlar: ${handleLeaves.length?handleLeaves.map(i=>'K'+(i+1)).join(', '):'yok'}</div>`}
+function getSegments(shape,w,shortW,leaves,p){
+  if(shape==='duz') return [{name:'Düz',count:leaves,length:w,corner:0,sideStart:true,sideEnd:true}];
+  if(shape==='l'){
+    const longCount=Math.max(1,Math.ceil(leaves/2));
+    const shortCount=Math.max(1,leaves-longCount);
+    return [{name:'Uzun Kol',count:longCount,length:w,corner:p.cornerLong,sideStart:true,sideEnd:true},{name:'Kısa Kol',count:shortCount,length:shortW,corner:p.cornerShort,sideStart:true,sideEnd:true}];
+  }
+  const longCount=Math.max(2,Math.ceil(leaves/2));
+  const rem=Math.max(2,leaves-longCount);
+  const leftCount=Math.max(1,Math.floor(rem/2));
+  const rightCount=Math.max(1,rem-leftCount);
+  return [{name:'Arka Uzun Kol',count:longCount,length:w,corner:p.cornerLong,sideStart:true,sideEnd:true},{name:'Sol Yan Kol',count:leftCount,length:shortW,corner:p.cornerShort,sideStart:true,sideEnd:true},{name:'Sağ Yan Kol',count:rightCount,length:shortW,corner:p.cornerShort,sideStart:true,sideEnd:true}];
+}
+function segmentGlassWidth(seg,p){
+  const usable=Math.max(0,seg.length-p.side-(seg.corner||0)-Math.max(0,seg.count-1)*p.inter);
+  return usable/Math.max(1,seg.count);
+}
 function calculate(){
  const w=+$('w').value||0,h=+$('h').value||0,shortW=+$('shortW').value||0,shape=$('shape').value,brand=$('brand').value,p=pay();
  const leaves=Math.max(2,+$('leaves').value||2),sale=+$('sale').value||0,cost=+$('cost').value||0,install=+$('install').value||0,other=+$('other').value||0,waste=(+$('waste').value||0)/100;
  ensureLeaves(leaves); renderLeafControls();
- const heightGlass=Math.max(0,h-p.height/10);
- let longCount=leaves,shortCount=0,longGlassW=0,shortGlassW=0;
- if(shape==='duz'){
-   const usable=w-p.side/10-p.side/10;
-   longGlassW=Math.max(0,(usable-Math.max(0,leaves-1)*p.inter/10)/leaves);
- } else {
-   longCount=Math.max(2,Math.ceil(leaves/2)); shortCount=Math.max(2,Math.floor(leaves/2));
-   longGlassW=Math.max(0,(w-p.side/10-p.cornerLong/10-Math.max(0,longCount-1)*p.inter/10)/longCount);
-   shortGlassW=Math.max(0,(shortW-p.side/10-p.cornerShort/10-Math.max(0,shortCount-1)*p.inter/10)/shortCount);
- }
- const totalPanels=shape==='duz'?leaves:longCount+shortCount;
- const area=shape==='duz'?(w*heightGlass/10000):((w+shortW)*heightGlass/10000);
+ const heightGlass=Math.max(0,h-p.height);
+ const segs=getSegments(shape,w,shortW,leaves,p);
+ const totalPanels=segs.reduce((a,s)=>a+s.count,0);
+ const area=segs.reduce((a,s)=>a+(s.length*heightGlass/1000000),0);
  const saleTotal=area*sale+install+other,baseCost=area*cost*(1+waste),profit=saleTotal-baseCost;
  $('area').textContent=area.toFixed(2)+' m²'; $('count').textContent=totalPanels; $('total').textContent=money(saleTotal); $('profit').textContent=money(profit); $('sysTag').textContent=$('system').value;
- $('payLibrary').innerHTML=`<b>${p.name}</b><br>${p.status}<br><br><b>Aktif paylar:</b> Dikey −${p.height} mm • yan dikme ${p.side} mm/yan • kollu kanat ${p.handle} mm • ara cam ${p.inter} mm • L uzun köşe ${p.cornerLong} mm • L kısa köşe ${p.cornerShort} mm.`;
+ $('payLibrary').innerHTML=`<b>${p.name}</b><br>${p.status}<br><br><b>Aktif paylar:</b> Dikey −${p.height} mm • yan dikme ${p.side} mm/yan • kollu kanat ${p.handle} mm • ara cam ${p.inter} mm • L/U uzun köşe ${p.cornerLong} mm • kısa köşe ${p.cornerShort} mm.`;
  const handleTxt=handleLeaves.length?handleLeaves.map(i=>'K'+(i+1)).join(', '):'yok';
- $('rules').innerHTML=shape==='duz'?`Düz: yükseklik <b>${h*10} − ${p.height} = ${h*10-p.height} mm</b>. Yan dikmeler toplam ${p.side*2} mm. Ara camlar ${p.inter} mm. <b>Kollu: ${handleTxt}</b>; 55 mm yalnızca bu kanatların camından düşülür.`:`L: yükseklik <b>${h*10} − ${p.height} = ${h*10-p.height} mm</b>. Uzun kol: yan ${p.side} + köşe ${p.cornerLong} mm. Kısa kol: yan ${p.side} + köşe ${p.cornerShort} mm. Ara cam ${p.inter} mm. <b>Kollu: ${handleTxt}</b>.`;
- let rows=[];
- if(shape==='duz'){
-   const normal=Math.max(0,leaves-handleLeaves.length), handle=handleLeaves.length;
-   const normalW=longGlassW, handleW=Math.max(0,longGlassW-p.handle/10);
-   if(normal) rows.push(['Normal cam',normal,`${normalW.toFixed(1)} × ${heightGlass.toFixed(1)} cm`,'Kollu olmayan kanatlar']);
-   if(handle) rows.push(['Kollu cam',handle,`${handleW.toFixed(1)} × ${heightGlass.toFixed(1)} cm`,'Her seçili kollu kanat için −55 mm']);
-   rows.push(['Ara cam payı',Math.max(0,leaves-1),`${p.inter} mm`,'Birleşim başına']); rows.push(['Yan dikme',2,`${h.toFixed(1)} cm`,'Sağ + sol']);
- } else {
-   rows.push(['Uzun kol camı',longCount,`${longGlassW.toFixed(1)} × ${heightGlass.toFixed(1)} cm`,'L uzun köşe payı']); rows.push(['Kısa kol camı',shortCount,`${shortGlassW.toFixed(1)} × ${heightGlass.toFixed(1)} cm`,'L kısa köşe payı']); rows.push(['Kollu kanat',handleLeaves.length,'adet','Seçilen kanatlarda −55 mm']); rows.push(['Ara cam payı',Math.max(0,longCount-1)+Math.max(0,shortCount-1),`${p.inter} mm`,'Birleşim başına']);
- }
+ const shapeName=shape==='duz'?'Düz':shape==='l'?'L':'U';
+ $('rules').innerHTML=`${shapeName}: yükseklik <b>${h} − ${p.height} = ${heightGlass} mm</b>. ${shape==='duz'?'Yan dikmeler toplam '+(p.side*2)+' mm.':shape==='l'?'Uzun kol köşe '+p.cornerLong+' mm, kısa kol köşe '+p.cornerShort+' mm.':'Uzun kol 2 köşe, sol/sağ yan kollarda kısa köşe payı '+p.cornerShort+' mm.'} Ara cam ${p.inter} mm. <b>Kollu: ${handleTxt}</b>; 55 mm yalnızca seçilen kollu kanatların camından düşülür.`;
+ let rows=[]; let idx=0;
+ segs.forEach(seg=>{
+   const gw=segmentGlassWidth(seg,p), normal=[], handles=[];
+   for(let j=0;j<seg.count;j++){(handleLeaves.includes(idx+j)?handles:normal).push(idx+j)}
+   if(normal.length) rows.push([seg.name+' normal cam',normal.length,`${gw.toFixed(0)} × ${heightGlass.toFixed(0)} mm`,'Kollu olmayan kanatlar']);
+   if(handles.length) rows.push([seg.name+' kollu cam',handles.length,`${Math.max(0,gw-p.handle).toFixed(0)} × ${heightGlass.toFixed(0)} mm`,'Her seçili kollu kanat için −55 mm']);
+   rows.push([seg.name+' ara cam payı',Math.max(0,seg.count-1),`${p.inter} mm`,'Birleşim başına']);
+   idx+=seg.count;
+ });
  rows.push(['Fitil / Conta',Math.ceil(totalPanels*2),'adet','Ön metraj']); $('bom').innerHTML=rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td></tr>`).join('');
- draw(shape==='duz'?w:w+shortW,h,totalPanels,shape);
+ drawShape(shape,w,h,shortW,segs);
 }
-function draw(w,h,leaves,shape){ensureLeaves(leaves); const c=$('drawing'),x=c.getContext('2d'); const pad=90,fw=c.width-pad*2,fh=c.height-pad*2,scale=Math.min(fw/w,fh/h),dw=w*scale,dh=h*scale,ox=(c.width-dw)/2,oy=(c.height-dh)/2; x.clearRect(0,0,c.width,c.height); x.fillStyle='#eef5fb'; x.fillRect(ox,oy,dw,dh); x.strokeStyle='#17324d';x.lineWidth=5;x.strokeRect(ox,oy,dw,dh); const pw=dw/leaves; x.lineWidth=2; for(let i=1;i<leaves;i++){const px=ox+pw*i;x.beginPath();x.moveTo(px,oy);x.lineTo(px,oy+dh);x.stroke()} x.textAlign='center'; x.fillStyle='#075aa8'; x.font='bold 13px Arial'; for(let i=0;i<leaves;i++){const cx=ox+pw*(i+.5),cy=oy+dh/2;x.fillText('K'+(i+1)+(handleLeaves.includes(i)?' • KOLLU':''),cx,oy+23);x.font='bold 25px Arial';x.fillText(leafDirections[i]||'→',cx,cy+8);x.font='bold 13px Arial';if(selectedLeaf===i){x.strokeStyle='#075aa8';x.lineWidth=3;x.strokeRect(ox+i*pw+2,oy+2,pw-4,dh-4)}} x.fillStyle='#17324d';x.font='bold 15px Arial';x.fillText(w+' cm',c.width/2,oy-25);x.save();x.translate(35,c.height/2);x.rotate(-Math.PI/2);x.fillText(h+' cm',0,0);x.restore();x.font='14px Arial';x.fillText('Kanat sayısı: '+leaves+(handleLeaves.length?' • Kollu: '+handleLeaves.map(i=>'K'+(i+1)).join(', '):''),c.width/2,oy+dh+35); c.onclick=function(ev){const r=c.getBoundingClientRect(),mx=(ev.clientX-r.left)*(c.width/r.width),my=(ev.clientY-r.top)*(c.height/r.height);if(mx>=ox&&mx<=ox+dw&&my>=oy&&my<=oy+dh){const i=Math.max(0,Math.min(leaves-1,Math.floor((mx-ox)/(dw/leaves))));toggleLeaf(i)}}}
+function drawPanelSegment(x,y,len,height,count,startIndex,orientation,ctx,c){
+ const pw=len/count, panels=[];
+ for(let j=0;j<count;j++){
+   const gx=x+(orientation==='h'?pw*j:0), gy=y+(orientation==='v'?pw*j:0);
+   const rect=orientation==='h'?{x:gx,y:gy,w:pw,h:height}:{x:gx,y:gy,w:height,h:pw};
+   ctx.strokeRect(rect.x,rect.y,rect.w,rect.h); panels.push({...rect,index:startIndex+j});
+   const cx=rect.x+rect.w/2, cy=rect.y+rect.h/2;
+   ctx.fillText('K'+(startIndex+j+1),cx,orientation==='h'?rect.y+18:cy);
+   ctx.font='bold 20px Arial'; ctx.fillText(leafDirections[startIndex+j]||'→',cx,orientation==='h'?cy+8:cy+7); ctx.font='bold 11px Arial';
+   if(handleLeaves.includes(startIndex+j)){ctx.fillText('KOLLU',cx,orientation==='h'?rect.y+34:cy+25);}
+   if(selectedLeaf===startIndex+j){ctx.strokeStyle='#075aa8';ctx.lineWidth=3;ctx.strokeRect(rect.x+2,rect.y+2,rect.w-4,rect.h-4);ctx.strokeStyle='#17324d';ctx.lineWidth=2;}
+ }
+ return panels;
+}
+function drawShape(shape,w,h,shortW,segs){
+ ensureLeaves(segs.reduce((a,s)=>a+s.count,0));
+ const c=$('drawing'),ctx=c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); ctx.textAlign='center';
+ const pad=55, maxW=c.width-pad*2,maxH=c.height-pad*2, depth=Math.min(h,shortW||h);
+ let scale;
+ if(shape==='duz') scale=Math.min(maxW/w,maxH/h);
+ else if(shape==='l') scale=Math.min(maxW/(w+shortW),maxH/Math.max(h,shortW));
+ else scale=Math.min(maxW/w,maxH/(h+shortW));
+ const H=h*scale, W=w*scale, S=shortW*scale;
+ const ox=(c.width-(shape==='duz'?W:W))/2, oy=shape==='duz'?(c.height-H)/2:45;
+ ctx.fillStyle='#eef5fb';ctx.strokeStyle='#17324d';ctx.lineWidth=4;
+ const panels=[]; let idx=0;
+ if(shape==='duz'){
+   ctx.fillRect(ox,oy,W,H);ctx.strokeRect(ox,oy,W,H);
+   panels.push(...drawPanelSegment(ox,oy,W,H,segs[0].count,0,'h',ctx,c));
+   ctx.fillStyle='#17324d';ctx.font='bold 14px Arial';ctx.fillText(w+' mm',c.width/2,oy-20);ctx.save();ctx.translate(22,c.height/2);ctx.rotate(-Math.PI/2);ctx.fillText(h+' mm',0,0);ctx.restore();
+ } else if(shape==='l'){
+   const totalW=W+S, baseX=(c.width-totalW)/2, baseY=65;
+   // Long leg horizontal, short leg downward at right corner
+   ctx.fillRect(baseX,baseY,W,H);ctx.strokeRect(baseX,baseY,W,H);
+   panels.push(...drawPanelSegment(baseX,baseY,W,H,segs[0].count,0,'h',ctx,c));
+   const sx=baseX+W-H/2, sy=baseY+H; ctx.fillRect(sx,sy,H,S);ctx.strokeRect(sx,sy,H,S);
+   panels.push(...drawPanelSegment(sx,sy,S,H,segs[1].count,segs[0].count,'v',ctx,c));
+   ctx.fillStyle='#17324d';ctx.font='bold 14px Arial';ctx.fillText(w+' mm',baseX+W/2,baseY-18);ctx.fillText(shortW+' mm',sx+S/2,sy+H+20);ctx.fillText('L KÖŞE',baseX+W-35,baseY+H+18);
+ } else {
+   // U: long rear leg across top + left/right side legs downward
+   const baseX=(c.width-W)/2, baseY=55;
+   const sideH=H+S;
+   ctx.fillRect(baseX,baseY,W,H);ctx.strokeRect(baseX,baseY,W,H);
+   panels.push(...drawPanelSegment(baseX,baseY,W,H,segs[0].count,0,'h',ctx,c));
+   const leftSegX=baseX-H/2, leftSegY=baseY+H, rightSegX=baseX+W-H/2, rightSegY=baseY+H;
+   ctx.fillRect(leftSegX,leftSegY,H,S);ctx.strokeRect(leftSegX,leftSegY,H,S);
+   panels.push(...drawPanelSegment(leftSegX,leftSegY,S,S,segs[1].count,segs[0].count,'v',ctx,c));
+   panels.push(...drawPanelSegment(rightSegX,rightSegY,S,S,segs[2].count,segs[0].count+segs[1].count,'v',ctx,c));
+   ctx.fillStyle='#17324d';ctx.font='bold 14px Arial';ctx.fillText(w+' mm',baseX+W/2,baseY-18);ctx.fillText(shortW+' mm',leftSegX+S/2,leftSegY+S+20);ctx.fillText(shortW+' mm',rightSegX+S/2,rightSegY+S+20);ctx.fillText('U KÖŞE',baseX+W/2,baseY+H+18);
+ }
+ ctx.fillStyle='#17324d';ctx.font='bold 14px Arial';ctx.fillText('Toplam kanat: '+segs.reduce((a,s)=>a+s.count,0)+(handleLeaves.length?' • Kollu: '+handleLeaves.map(i=>'K'+(i+1)).join(', '):''),c.width/2,c.height-18);
+ c.onclick=function(ev){const r=c.getBoundingClientRect(),mx=(ev.clientX-r.left)*(c.width/r.width),my=(ev.clientY-r.top)*(c.height/r.height);let hit=panels.find(q=>mx>=q.x&&mx<=q.x+q.w&&my>=q.y&&my<=q.y+q.h);if(hit){toggleLeaf(hit.index)}};
+}
 function saveProject(){calculate();const p=JSON.parse(localStorage.getItem('cb_projects')||'[]');p.unshift({name:$('project').value||'İsimsiz',date:new Date().toLocaleString('tr-TR'),brand:$('brand').value,system:$('system').value,shape:$('shape').value,w:+$('w').value,h:+$('h').value,shortW:+$('shortW').value,handles:handleLeaves,area:$('area').textContent,total:$('total').textContent});localStorage.setItem('cb_projects',JSON.stringify(p.slice(0,30)));renderSaved()}
-function renderSaved(){const p=JSON.parse(localStorage.getItem('cb_projects')||'[]');$('saved').innerHTML=p.length?p.map(v=>`<div style="padding:8px 0;border-bottom:1px solid #e5ebf1"><b>${v.name}</b><br><span class="muted">${v.brand||''} • ${v.system} • ${v.w}×${v.h} cm • ${v.area} • ${v.total}<br>${v.handles?.length?'Kollu: '+v.handles.map(i=>'K'+(i+1)).join(', ')+'<br>':''}${v.date}</span></div>`).join(''):'Henüz kayıt yok.'}
+function renderSaved(){const p=JSON.parse(localStorage.getItem('cb_projects')||'[]');$('saved').innerHTML=p.length?p.map(v=>`<div style="padding:8px 0;border-bottom:1px solid #e5ebf1"><b>${v.name}</b><br><span class="muted">${v.brand||''} • ${v.system} • ${v.w}×${v.h} mm • ${v.area} • ${v.total}<br>${v.handles?.length?'Kollu: '+v.handles.map(i=>'K'+(i+1)).join(', ')+'<br>':''}${v.date}</span></div>`).join(''):'Henüz kayıt yok.'}
 function clearProjects(){if(confirm('Kayıtlar silinsin mi?')){localStorage.removeItem('cb_projects');renderSaved()}}
-['w','h','shortW','brand','leaves','system','glass','color','sale','cost','install','other','waste','handleCount'].forEach(id=>$(id).addEventListener('input',calculate)); $('shape').addEventListener('change',()=>{$('lbox').style.display=$('shape').value==='l'?'block':'none';calculate()}); $('leaves').addEventListener('change',()=>{ensureLeaves(+$('leaves').value||2); calculate()}); calculate(); renderSaved();
+['w','h','shortW','brand','leaves','system','glass','color','sale','cost','install','other','waste','handleCount'].forEach(id=>$(id).addEventListener('input',calculate)); $('shape').addEventListener('change',()=>{$('lbox').style.display=$('shape').value==='duz'?'none':'block';$('shortLabel').textContent=$('shape').value==='u'?'Yan Kol (mm)':'L kısa kol (mm)';calculate()}); $('leaves').addEventListener('change',()=>{ensureLeaves(+$('leaves').value||2); calculate()}); calculate(); renderSaved();
 </script></body></html>
